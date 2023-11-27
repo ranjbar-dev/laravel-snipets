@@ -28,9 +28,9 @@ class HttpLogMiddleware extends Middleware
             $user_id = null ;
             $email = null ;
 
-            if ( user() ) {
-                $user_id = user()->id ;
-                $email = user()->email ;
+            if ( auth()->user() ) {
+                $user_id = auth()->user()->id ;
+                $email = auth()->user()->email ;
             }
 
             StoreHttpLogJob::dispatch([
