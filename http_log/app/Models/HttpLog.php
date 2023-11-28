@@ -10,7 +10,6 @@ class HttpLog extends BaseModel
     protected $casts = [
         'request_body' => AsCollection::class, // request body 
         'request_headers' => AsCollection::class, // request headers 
-        'response_body' => AsCollection::class, // request headers 
         'response_headers' => AsCollection::class, // request headers 
     ];
 }
