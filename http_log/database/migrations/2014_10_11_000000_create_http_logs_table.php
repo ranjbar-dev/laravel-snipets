@@ -27,6 +27,7 @@ class CreateHttpLogsTable extends Migration
             $table->longText('response_body')->nullable();
             $table->longText('response_headers')->nullable();
             $table->string('response_status')->nullable();
+            $table->string('response_time')->nullable();
             $table->timestamps();
         });
     }

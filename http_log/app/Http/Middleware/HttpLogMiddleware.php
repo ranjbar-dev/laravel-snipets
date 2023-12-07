@@ -17,11 +17,21 @@ class HttpLogMiddleware extends Middleware
 
     public function handle($request, $next)
     {
-        return $next($request);
+        $start = now()->getTimestampMs();
+
+        $response = $next($request);
+
+        $end = now()->getTimestampMs();
+
+        $response->headers->set('X-Response-Time', $end - $start);
+
+        return $response;
     }
 
     public function terminate( Request $request, $response)
     {
+        $response_time = $response->headers->get('X-Response-Time') ;
+
         // check if request url is not in except list 
         if ( !Str::startsWith($request->path(),$this->except) )
         {
@@ -43,6 +53,7 @@ class HttpLogMiddleware extends Middleware
                 'response_body' => $response->getContent() ?? null ,
                 'response_headers' => $response->headers->all() ?? [] ,
                 'response_status' => $response->getStatusCode() ?? 0,
+                'response_time' => $response_time,
                 'created_at' => now()->toDateTimeString(),
                 'updated_at' => now()->toDateTimeString(),
             ]);
