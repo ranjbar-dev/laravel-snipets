@@ -1,0 +1,50 @@
+version: '3.9'
+
+services:
+   
+  db:
+    container_name: mariadb-container
+    build:
+      context: ./db/
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    env_file:
+      - ./db/.env
+    ports:
+      - "63603:3306"
+    volumes:
+      - db:/var/lib/mysql
+
+  redis:
+    container_name: redis-container
+    build:
+      context: ./redis/
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    ports:
+      - "63602:6379"
+
+  laravel:
+    build:
+      context: ./api/
+      dockerfile: DockerFile
+      target: prod
+    container_name: laravel-container
+    restart: unless-stopped
+    volumes:
+      - ./api/:/app/api/
+      - ./api/storage:/app/api/storage
+      - /app/api/vendor
+      - /app/api/node_modules
+    depends_on:
+      - redis
+      - db
+    ports:
+      - "127.0.0.1:8000:8000"
+
+volumes:
+  db:
+    driver: local
+
+
+

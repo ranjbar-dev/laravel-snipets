@@ -1,0 +1,82 @@
+FROM php:8.2-cli as builder
+
+# set timezone
+ENV TZ=Asia/Tehran
+RUN ls /usr/share/zoneinfo && cp /usr/share/zoneinfo/Iran /etc/localtime && echo "Asia/Tehran" >  /etc/timezone
+
+RUN apt-get update && apt-get install -y \
+    build-essential \
+    libcurl4-openssl-dev \
+    zlib1g-dev \
+    libzip-dev \
+    libicu-dev \
+    g++ \
+    libpng-dev \
+    libjpeg-dev \
+    libonig-dev \
+    curl \
+    unzip \
+    git \
+    cron \
+    supervisor \
+    nodejs npm
+
+
+RUN docker-php-ext-configure gd --with-jpeg \
+    && docker-php-ext-install -j$(nproc) gd \
+    && docker-php-ext-install -j$(nproc) pdo_mysql \
+    && docker-php-ext-install -j$(nproc) exif \
+    && docker-php-ext-configure intl \
+    && docker-php-ext-install -j$(nproc) intl \
+    && docker-php-ext-install -j$(nproc) zip \
+    && docker-php-ext-install -j$(nproc) bcmath \
+    && docker-php-ext-install -j$(nproc) mysqli
+
+
+RUN pecl install swoole  && docker-php-ext-enable swoole
+
+RUN pecl install redis && docker-php-ext-enable redis.so
+
+
+
+RUN docker-php-ext-install pcntl
+
+
+COPY --from=composer /usr/bin/composer /usr/bin/composer
+
+WORKDIR /app/api
+
+COPY ./package.* .
+
+RUN npm i
+
+COPY . .
+
+RUN composer i --ignore-platform-reqs
+
+
+RUN chown -R www-data:www-data ./ \
+    && chmod -R 755 ./storage \
+    && chmod -R 755 ./bootstrap/cache
+
+
+## clear
+#RUN rm -rf /tmp/* && rm -rf /var/cache/apk/*
+
+
+FROM builder as  dev
+
+# copy supervisor dev config
+COPY ./supervisor/supervisord.conf /etc/supervisor/conf.d/supervisord.conf
+
+# run supervisor
+CMD ["supervisord","-c","/etc/supervisor/conf.d/supervisord.conf"]
+
+FROM builder as  prod
+
+# copy supervisor prod config
+COPY ./supervisor/supervisord-prod.conf /etc/supervisor/conf.d/supervisord.conf
+
+# run supervisor
+CMD ["supervisord","-c","/etc/supervisor/conf.d/supervisord.conf"]
+
